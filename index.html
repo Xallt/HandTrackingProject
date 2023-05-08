@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mapbox Image Locations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css" rel="stylesheet" />
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #upload-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="upload-container">
+    <label for="image-input">Upload Images:</label>
+    <input type="file" id="image-input" accept="image/*" multiple />
+  </div>
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1Ijoia2F2YWJvbmdhIiwiYSI6ImNsaGV5eTNjNTExbXMzZXBjdWU1ZDMxdDAifQ.q43hhwc6ivz8UvwDFc01oQ';
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [-74.50, 40], // Set the initial center to New York City
+      zoom: 9
+    });
+
+    // Sample list of coordinates to display on the map
+    const coordinates = [
+      { lat: 40.7128, lng: -74.0060, description: 'Sample description 1' },
+      { lat: 40.7306, lng: -73.9352, description: 'Sample description 2' }
+    ];
+
+    // Function to create a popup with a description
+    function createPopup(description) {
+      return new mapboxgl.Popup({ offset: 25 }).setHTML(`<p>${description}</p>`);
+    }
+
+    // Add markers for each coordinate
+    coordinates.forEach(coord => {
+      new mapboxgl.Marker()
+        .setLngLat([coord.lng, coord.lat])
+        .setPopup(createPopup(coord.description))
+        .addTo(map);
+    });
+
+    const imageInput = document.getElementById('image-input');
+
+    imageInput.addEventListener('change', (event) => {
+    const files = event.target.files;
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        if (file.type.startsWith('image/')) {
+        const image = new Image();
+        image.src = URL.createObjectURL(file);
+
+        image.onload = () => {
+            console.log(`Image dimensions: ${image.width}x${image.height}`);
+            URL.revokeObjectURL(image.src);
+        };
+        }
+    }
+    });
+
+  </script>
+</body>
+</html>
