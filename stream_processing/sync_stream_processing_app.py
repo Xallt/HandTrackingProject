@@ -24,6 +24,9 @@ class SynchronousStreamProcessingApp(WebcamApp):
         cap = cv2.VideoCapture(self.url)
         prev_time = time.time()
         while True:
+            # Start timer for delay
+            read_time = time.time()
+            # Read frame
             ret, frame = cap.read()
             if not ret:
                 self.logger.error("Failed to read frame")
@@ -33,8 +36,6 @@ class SynchronousStreamProcessingApp(WebcamApp):
             # Frame processing
             ##
 
-            # Start timer
-            start_frame_time = time.time()
             # Convert to RGB
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             # Flip frame so it isn't mirrored
@@ -44,8 +45,6 @@ class SynchronousStreamProcessingApp(WebcamApp):
                 frame = self.transform.transform(frame)
             # Convert back to BGR for OpenCV's imshow
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            # Calculate time to process frame
-            sec_per_frame = time.time() - start_frame_time
 
             ##
             # Display
@@ -55,11 +54,12 @@ class SynchronousStreamProcessingApp(WebcamApp):
             cur_time = time.time()
             fps = 1 / (cur_time - prev_time)
             prev_time = cur_time
-
+            # Calculate delay
+            delay = time.time() - read_time
             # Display FPS
             self.add_stats(
                 frame,
-                {'FPS': fps, 'sec/frame': sec_per_frame},
+                {'FPS': fps, 'Delay': delay},
                 color=(0, 255, 0),
                 scale=0.8
             )
