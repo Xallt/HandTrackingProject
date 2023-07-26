@@ -6,52 +6,19 @@ import ctypes
 import time
 import numpy as np
 from transformations.image_transform import ImageTransform
+from .webcam_app import WebcamApp
 
-class SynchronousStreamProcessingApp:
+class SynchronousStreamProcessingApp(WebcamApp):
     def __init__(
             self, 
             url: str, 
             transform: ImageTransform = None, 
             debug: bool = False
         ):
-        self._init_logging(debug)
+        super().__init__(url, debug)
 
         self.logger.info("Initializing SynchronousStreamProcessingApp")
-        self.url = self._preprocess_url(url)
         self.transform = transform
-
-    def _init_logging(self, debug: bool):
-        self.logger = logging.getLogger()
-        if debug:
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger.setLevel(logging.INFO)
-
-        handler = logging.StreamHandler()
-        if debug:
-            handler.setLevel(logging.DEBUG)
-        else:
-            handler.setLevel(logging.INFO)
-
-        formatter = colorlog.ColoredFormatter(
-            "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
-            datefmt='%Y-%m-%d %H:%M:%S',
-            log_colors={
-                'DEBUG':    'cyan',
-                'INFO':     'green',
-                'WARNING':  'yellow',
-                'ERROR':    'red',
-                'CRITICAL': 'red,bg_white',
-            }
-        )
-        handler.setFormatter(formatter)
-
-        self.logger.addHandler(handler)
-
-    def _preprocess_url(self, url: str) -> str:
-        if url.isnumeric():
-            url = int(url)
-        return url
 
     def run(self):
         cap = cv2.VideoCapture(self.url)

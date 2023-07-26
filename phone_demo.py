@@ -28,8 +28,8 @@ if __name__ == '__main__':
             debug=args.debug
         )
     elif args.app_type == 'async_queue':
-        from stream_processing.stream_processing_app import StreamProcessingApp
-        app = StreamProcessingApp(
+        from stream_processing.queue_stream_processing_app import QueueStreamProcessingApp
+        app = QueueStreamProcessingApp(
             args.url,
             MediaPipeHandDetectionTransform(),
             debug=args.debug

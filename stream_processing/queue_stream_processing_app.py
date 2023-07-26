@@ -5,8 +5,9 @@ import multiprocessing
 import ctypes
 import time
 from transformations.image_transform import ImageTransform
+from .webcam_app import WebcamApp
 
-class StreamProcessingApp:
+class QueueStreamProcessingApp(WebcamApp):
     def __init__(
             self, 
             url: str, 
@@ -14,10 +15,9 @@ class StreamProcessingApp:
             max_queue_size: int = 10,
             debug: bool = False
         ):
-        self._init_logging(debug)
+        super().__init__(url, debug)
 
-        self.logger.info("Initializing StreamProcessingApp")
-        self.url = self._preprocess_url(url)
+        self.logger.info("Initializing QueueStreamProcessingApp")
         self.max_queue_size = max_queue_size
         self.transform = transform
 
@@ -25,39 +25,6 @@ class StreamProcessingApp:
         self.processing_to_webcam_queue = None
         self.exit_flag = None
         self.webcam_lock = None
-
-    def _init_logging(self, debug: bool):
-        self.logger = logging.getLogger()
-        if debug:
-            self.logger.setLevel(logging.DEBUG)
-        else:
-            self.logger.setLevel(logging.INFO)
-
-        handler = logging.StreamHandler()
-        if debug:
-            handler.setLevel(logging.DEBUG)
-        else:
-            handler.setLevel(logging.INFO)
-
-        formatter = colorlog.ColoredFormatter(
-            "%(log_color)s%(asctime)s - %(levelname)s - %(message)s",
-            datefmt='%Y-%m-%d %H:%M:%S',
-            log_colors={
-                'DEBUG':    'cyan',
-                'INFO':     'green',
-                'WARNING':  'yellow',
-                'ERROR':    'red',
-                'CRITICAL': 'red,bg_white',
-            }
-        )
-        handler.setFormatter(formatter)
-
-        self.logger.addHandler(handler)
-
-    def _preprocess_url(self, url: str) -> str:
-        if url.isnumeric():
-            url = int(url)
-        return url
 
     def webcam_reader_loop(self):
         self.logger.info("Starting webcam reader loop")
