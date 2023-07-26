@@ -5,8 +5,6 @@ class MediaPipeHandDetectionTransform(ImageTransform):
     def __init__(self):
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_hands = mp.solutions.hands
-    def validate(self, image):
-        return True
     def transform(self, image):
         image = image.copy()
         with self.mp_hands.Hands(static_image_mode=True, max_num_hands=2) as hands:
