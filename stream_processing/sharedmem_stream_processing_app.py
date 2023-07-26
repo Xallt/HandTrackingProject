@@ -67,7 +67,12 @@ class SharedmemStreamProcessingApp(WebcamApp):
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             cur_time = time.time()
             fps = 1 / (cur_time - prev_time)
-            cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.add_stats(
+                frame,
+                {'FPS': fps},
+                color=(0, 255, 0),
+                scale=0.8
+            )
             cv2.imshow('frame', frame)
             prev_time = cur_time
             if cv2.waitKey(1) == ord('q'):

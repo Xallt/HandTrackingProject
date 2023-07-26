@@ -57,8 +57,12 @@ class SynchronousStreamProcessingApp(WebcamApp):
             prev_time = cur_time
 
             # Display FPS
-            cv2.putText(frame, f"FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            cv2.putText(frame, f"sec/frame: {sec_per_frame:.4f}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.add_stats(
+                frame,
+                {'FPS': fps, 'sec/frame': sec_per_frame},
+                color=(0, 255, 0),
+                scale=0.8
+            )
 
             cv2.imshow("frame", frame)
 
