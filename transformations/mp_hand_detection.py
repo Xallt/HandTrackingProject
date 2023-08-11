@@ -59,7 +59,8 @@ class MediaPipeHandDetectionTransform(ImageTransform):
     def __init__(self):
         self.sync_options = HandLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=HAND_LANDMARKER_PATH),
-            running_mode=VisionRunningMode.IMAGE
+            running_mode=VisionRunningMode.IMAGE,
+            num_hands=2
         )
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_hands = mp.solutions.hands
@@ -74,7 +75,8 @@ class MediaPipeHandDetectionTransform(ImageTransform):
         self.options_async = HandLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=HAND_LANDMARKER_PATH),
             running_mode=VisionRunningMode.LIVE_STREAM,
-            result_callback=self._draw_landmark_callback
+            result_callback=self._draw_landmark_callback,
+            num_hands=2
         )
 
     def transform_async(self, image, timestamp):
