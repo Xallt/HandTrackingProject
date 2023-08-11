@@ -1,5 +1,6 @@
 import argparse
 from transformations.mp_hand_detection import ImageTransform, MediaPipeHandDetectionTransform
+from transformations.toy_transformations import NegativeTransformation
 
 
 if __name__ == '__main__':
@@ -17,29 +18,41 @@ if __name__ == '__main__':
         default='sync',
         help='Type of app to run'
     )
+    parser.add_argument(
+        '--transformation',
+        choices=[
+            'negative',               # Negative transformation
+            'mp_hand_detection',      # MediaPipe hand detection
+        ],
+        default='mp_hand_detection',
+        help='Transformation to apply to video stream'
+    )
 
     args = parser.parse_args()
+    if args.transformation == 'negative':
+        transform = NegativeTransformation()
+    elif args.transformation == 'mp_hand_detection':
+        transform = MediaPipeHandDetectionTransform(enable_mouse=False)
 
     if args.app_type == 'sync':
         from stream_processing.sync_stream_processing_app import SynchronousStreamProcessingApp
         app = SynchronousStreamProcessingApp(
             args.url,
-            MediaPipeHandDetectionTransform(),
+            transform,
             debug=args.debug
         )
     elif args.app_type == 'async_queue':
         from stream_processing.queue_stream_processing_app import QueueStreamProcessingApp
         app = QueueStreamProcessingApp(
             args.url,
-            MediaPipeHandDetectionTransform(),
+            transform,
             debug=args.debug
         )
     elif args.app_type == 'async_sharedmem':
         from stream_processing.sharedmem_stream_processing_app import SharedmemStreamProcessingApp
         app = SharedmemStreamProcessingApp(
             args.url,
-            MediaPipeHandDetectionTransform(),
-            debug=args.debug
+            transform,
         )
     app.run()
 
