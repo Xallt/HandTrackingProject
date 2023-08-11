@@ -27,6 +27,11 @@ if __name__ == '__main__':
         default='mp_hand_detection',
         help='Transformation to apply to video stream'
     )
+    parser.add_argument(
+        '--async_transform',
+        action='store_true',
+        help='Use asynchronous transform'
+    )
 
     args = parser.parse_args()
     if args.transformation == 'negative':
@@ -53,6 +58,8 @@ if __name__ == '__main__':
         app = SharedmemStreamProcessingApp(
             args.url,
             transform,
+            debug=args.debug,
+            async_transform=args.async_transform
         )
     app.run()
 
