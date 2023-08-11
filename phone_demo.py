@@ -37,7 +37,7 @@ if __name__ == '__main__':
     if args.transformation == 'negative':
         transform = NegativeTransformation()
     elif args.transformation == 'mp_hand_detection':
-        transform = MediaPipeHandDetectionTransform(enable_mouse=False)
+        transform = MediaPipeHandDetectionTransform()
 
     if args.app_type == 'sync':
         from stream_processing.sync_stream_processing_app import SynchronousStreamProcessingApp
