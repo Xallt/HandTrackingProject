@@ -2,6 +2,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
 #include <iostream>
+#include <cstdio>
 #include <chrono>
 
 int main() {
@@ -23,8 +24,9 @@ int main() {
         auto current_time = std::chrono::high_resolution_clock::now();
         double fps = 1.0 / std::chrono::duration<double>(current_time - last_time).count();
         last_time = current_time;
+        char fps_text[32];
+        std::sprintf(fps_text, "FPS: %0.3f", fps);
 
-        std::string fps_text = "FPS: " + std::to_string(fps);
         cv::putText(frame, fps_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
 
         cv::imshow("Webcam", frame);
