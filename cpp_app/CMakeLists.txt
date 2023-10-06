@@ -37,18 +37,9 @@ include_directories(
 
 
 # add_executable(main main.cpp)  # Define executable target
-add_executable(main_imgui main_imgui.cpp ${IMGUI_SOURCES})  # Define executable target
 add_executable(main main.cpp ${IMGUI_SOURCES})  # Define executable target
 
 target_link_libraries(main
-    ${OpenCV_LIBS}
-    glfw
-    ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
-    ${GLUT_LIBRARIES}
-    dl
-)
-target_link_libraries(main_imgui
     ${OpenCV_LIBS}
     glfw
     ${OPENGL_LIBRARIES}

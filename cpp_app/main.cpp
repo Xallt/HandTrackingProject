@@ -1,40 +1,201 @@
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/videoio.hpp>
 #include <iostream>
-#include <cstdio>
-#include <chrono>
+#include <opencv2/opencv.hpp>
 
-int main() {
+#include <GL/glew.h>
+#include <GL/glut.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include <GLFW/glfw3.h>
+
+const char* vertexShaderSource = R"(
+#version 330 core
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec2 aTexCoord;
+
+out vec2 TexCoord;
+
+void main()
+{
+    gl_Position = vec4(aPos, 1.0);
+    TexCoord = aTexCoord;
+}
+)";
+
+const char* fragmentShaderSource = R"(
+#version 330 core
+out vec4 FragColor;
+
+in vec2 TexCoord;
+
+uniform sampler2D texture1;
+
+void main()
+{
+    FragColor = texture(texture1, TexCoord);
+}
+)";
+
+struct ImageShader {
+    GLuint shaderProgram;
+    GLuint VAO;
+    GLuint texture;
+};
+
+ImageShader compileImageShader( const char* vertexShaderSource, const char* fragmentShaderSource, cv::Mat image) {
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    float vertices[] = {
+        // positions        // texture coords
+        1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f
+    };
+    unsigned int indices[] = {
+        0, 1, 3,
+        1, 2, 3
+    };
+
+    GLuint VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return { shaderProgram, VAO, texture };
+}
+
+void useImageShader( ImageShader imageShader, cv::Mat image) {
+    glUseProgram(imageShader.shaderProgram);
+    glBindVertexArray(imageShader.VAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, imageShader.texture);
+    GLenum error = glGetError();
+    if(error != GL_NO_ERROR) {
+        std::cerr << "BEFORE OpenGL error: " << error << std::endl;
+    }
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image.cols, image.rows, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
+    error = glGetError();
+    if(error != GL_NO_ERROR) {
+        std::cerr << "AFTER OpenGL error: " << error << std::endl;
+    }
+
+    glUniform1i(glGetUniformLocation(imageShader.shaderProgram, "texture1"), 0);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
+
+int main( int argc, char* argv[] )
+{
+    if(!glfwInit()){
+        std::cout << "Could not initialize GLFW" << std::endl;
+        return -1;
+    }
+
+    cv::Mat image = cv::imread("/home/xallt/Pictures/frog_mesh_neus3.png", cv::IMREAD_COLOR );
+    if( image.empty() ){
+        std::cout << "Could not open or find the image" << std::endl;
+        return -1;
+    }
+    cv::cvtColor( image, image, cv::COLOR_BGR2RGBA );
+
+    GLFWwindow* window = glfwCreateWindow( 800, 600, "glfw window", nullptr, nullptr );
+    glfwSetWindowCloseCallback( window, []( GLFWwindow* window ){ glfwSetWindowShouldClose( window, GL_FALSE ); } );
+    glfwMakeContextCurrent( window );
+    glfwSwapInterval( 1 );
+
+	glewExperimental = GL_TRUE; // stops glew crashing on OSX :-/
+    if (glewInit() != GLEW_OK) {
+        std::cout << "Could not initialize GLEW" << std::endl;
+        return -1;
+    }
+
+    ImageShader imageShader;
+    bool shaderCreated = false;
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGui_ImplGlfw_InitForOpenGL( window, true );
+    ImGui_ImplOpenGL3_Init( "#version 330" );
+
     cv::VideoCapture cap(0);
 
     if (!cap.isOpened()) {
         std::cout << "Error: Could not access webcam" << std::endl;
         return -1;
     }
-
-    cv::namedWindow("Webcam", cv::WINDOW_AUTOSIZE);
-
     cv::Mat frame;
 
-    auto last_time = std::chrono::high_resolution_clock::now();
+    bool is_show = true;
+    while( is_show ){
 
-    while (1) {
+        glfwPollEvents();
         cap >> frame;
-        auto current_time = std::chrono::high_resolution_clock::now();
-        double fps = 1.0 / std::chrono::duration<double>(current_time - last_time).count();
-        last_time = current_time;
-        char fps_text[32];
-        std::sprintf(fps_text, "FPS: %0.3f", fps);
+        if (!shaderCreated) {
+            imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
+            shaderCreated = true;
+        }
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
 
-        cv::putText(frame, fps_text, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+        glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+        glClear( GL_COLOR_BUFFER_BIT );
 
-        cv::imshow("Webcam", frame);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
-        if (cv::waitKey(1) >= 0) break;
+        ImGui::Begin( "imgui image", &is_show );
+        GLuint texture;
+        glGenTextures( 1, &texture );
+        glActiveTexture( GL_TEXTURE0 );
+        glBindTexture( GL_TEXTURE_2D, texture );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, frame.cols, frame.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.data );
+        ImGui::Image( reinterpret_cast<void*>( static_cast<intptr_t>( texture ) ), ImVec2( frame.cols, frame.rows ) );
+        ImGui::End();
+        glBindTexture( GL_TEXTURE_2D, 0 );
+
+
+        useImageShader( imageShader, frame);
+        
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
+        glfwSwapBuffers( window );
     }
 
-    cap.release();
-    cv::destroyWindow("Webcam");
+    ImGui_ImplGlfw_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext();
+    glfwTerminate();
+
     return 0;
 }
