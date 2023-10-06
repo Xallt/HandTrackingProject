@@ -130,7 +130,6 @@ int main( int argc, char* argv[] )
     glfwSetWindowCloseCallback( window, []( GLFWwindow* window ){ glfwSetWindowShouldClose( window, GL_FALSE ); } );
     glfwMakeContextCurrent( window );
     glfwSetWindowSizeLimits( window, frame.cols, frame.rows, frame.cols, frame.rows);
-    // Make window unresizable
     glfwSwapInterval( 1 );
 
 	glewExperimental = GL_TRUE; // stops glew crashing on OSX :-/
@@ -140,7 +139,7 @@ int main( int argc, char* argv[] )
     }
 
     bool firstIteration = true;
-    ImageShader imageShader;
+    ImageShader imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -151,22 +150,16 @@ int main( int argc, char* argv[] )
 
 
     bool is_show = true;
+    bool flagFlipHorizontally = true;
     uint32_t width, height;
     while (is_show) {
         glfwPollEvents();
         cap >> frame;
-        // std::cout << frame.cols << " " << frame.rows << std::endl;
-        // if (firstIteration) { 
-        //     width = frame.cols, height = frame.rows;
-        //     glfwSetWindowSize( window, width, height );
-        //     glfwSetWindowSizeLimits( window, width, height, width, height );
-        // }
-        if (firstIteration)
-            imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
         // Flip vertically and horizontally
         cv::flip(frame, frame, 0);
-        cv::flip(frame, frame, 1);
+        if (flagFlipHorizontally)
+            cv::flip(frame, frame, 1);
 
         glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
         glClear( GL_COLOR_BUFFER_BIT );
@@ -177,8 +170,8 @@ int main( int argc, char* argv[] )
 
         if (firstIteration)
             ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
-        ImGui::Begin( "imgui image", &is_show );
-        ImGui::Text( "Hello, world!" );
+        ImGui::Begin( "ImGUI controls", &is_show );
+        ImGui::Checkbox( "Flip horizontally", &flagFlipHorizontally );
 
         ImGui::End();
 
