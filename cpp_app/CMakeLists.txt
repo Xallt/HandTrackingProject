@@ -1,18 +1,21 @@
 cmake_minimum_required(VERSION 3.10)
 project(ReadImageProject)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_BUILD_TYPE Debug) # Debug by default
 
-# Include glfw3
 find_package(glfw3 3.3 REQUIRED)  # Find glfw3 package
-
-# Include OpenGL
 find_package(OpenGL REQUIRED)  # Find OpenGL package
-include_directories(${OPENGL_INCLUDE_DIRS})  # Include OpenGL directories
-
-
-# Include OpenCV
 find_package(OpenCV REQUIRED)  # Find OpenCV package
-include_directories(${OpenCV_INCLUDE_DIRS})  # Include OpenCV directories
+find_package(GLEW REQUIRED)
+find_package(GLUT REQUIRED)
+
+
+include_directories(
+    ${OpenCV_INCLUDE_DIRS}
+    ${OPENGL_INCLUDE_DIRS}
+    ${GLEW_INCLUDE_DIRS}
+    ${GLUT_INCLUDE_DIRS}
+)  
 
 # Include ImGui
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/dependencies/imgui)
@@ -27,10 +30,11 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-include_directories(main 
+include_directories(
     ${IMGUI_DIR} 
     ${IMGUI_DIR}/backends
 )
+
 
 # add_executable(main main.cpp)  # Define executable target
 add_executable(main_imgui main_imgui.cpp ${IMGUI_SOURCES})  # Define executable target
@@ -40,11 +44,15 @@ target_link_libraries(main
     ${OpenCV_LIBS}
     glfw
     ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    ${GLUT_LIBRARIES}
     dl
 )
 target_link_libraries(main_imgui
     ${OpenCV_LIBS}
     glfw
     ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    ${GLUT_LIBRARIES}
     dl
 )
