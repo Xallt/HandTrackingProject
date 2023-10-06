@@ -98,16 +98,7 @@ void useImageShader( ImageShader imageShader, cv::Mat image) {
     glBindVertexArray(imageShader.VAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, imageShader.texture);
-    GLenum error = glGetError();
-    if(error != GL_NO_ERROR) {
-        std::cerr << "BEFORE OpenGL error: " << error << std::endl;
-    }
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image.cols, image.rows, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
-    error = glGetError();
-    if(error != GL_NO_ERROR) {
-        std::cerr << "AFTER OpenGL error: " << error << std::endl;
-    }
-
     glUniform1i(glGetUniformLocation(imageShader.shaderProgram, "texture1"), 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
@@ -126,9 +117,20 @@ int main( int argc, char* argv[] )
     }
     cv::cvtColor( image, image, cv::COLOR_BGR2RGBA );
 
-    GLFWwindow* window = glfwCreateWindow( 800, 600, "glfw window", nullptr, nullptr );
+    cv::VideoCapture cap(0);
+
+    if (!cap.isOpened()) {
+        std::cout << "Error: Could not access webcam" << std::endl;
+        return -1;
+    }
+    cv::Mat frame;
+    cap >> frame;
+
+    GLFWwindow* window = glfwCreateWindow( frame.cols, frame.rows, "glfw window", nullptr, nullptr );
     glfwSetWindowCloseCallback( window, []( GLFWwindow* window ){ glfwSetWindowShouldClose( window, GL_FALSE ); } );
     glfwMakeContextCurrent( window );
+    glfwSetWindowSizeLimits( window, frame.cols, frame.rows, frame.cols, frame.rows);
+    // Make window unresizable
     glfwSwapInterval( 1 );
 
 	glewExperimental = GL_TRUE; // stops glew crashing on OSX :-/
@@ -137,8 +139,8 @@ int main( int argc, char* argv[] )
         return -1;
     }
 
+    bool firstIteration = true;
     ImageShader imageShader;
-    bool shaderCreated = false;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -146,24 +148,25 @@ int main( int argc, char* argv[] )
     ImGui_ImplGlfw_InitForOpenGL( window, true );
     ImGui_ImplOpenGL3_Init( "#version 330" );
 
-    cv::VideoCapture cap(0);
 
-    if (!cap.isOpened()) {
-        std::cout << "Error: Could not access webcam" << std::endl;
-        return -1;
-    }
-    cv::Mat frame;
 
     bool is_show = true;
-    while( is_show ){
-
+    uint32_t width, height;
+    while (is_show) {
         glfwPollEvents();
         cap >> frame;
-        if (!shaderCreated) {
+        // std::cout << frame.cols << " " << frame.rows << std::endl;
+        // if (firstIteration) { 
+        //     width = frame.cols, height = frame.rows;
+        //     glfwSetWindowSize( window, width, height );
+        //     glfwSetWindowSizeLimits( window, width, height, width, height );
+        // }
+        if (firstIteration)
             imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
-            shaderCreated = true;
-        }
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
+        // Flip vertically and horizontally
+        cv::flip(frame, frame, 0);
+        cv::flip(frame, frame, 1);
 
         glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
         glClear( GL_COLOR_BUFFER_BIT );
@@ -172,24 +175,24 @@ int main( int argc, char* argv[] )
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        if (firstIteration)
+            ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
         ImGui::Begin( "imgui image", &is_show );
-        GLuint texture;
-        glGenTextures( 1, &texture );
-        glActiveTexture( GL_TEXTURE0 );
-        glBindTexture( GL_TEXTURE_2D, texture );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, frame.cols, frame.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, frame.data );
-        ImGui::Image( reinterpret_cast<void*>( static_cast<intptr_t>( texture ) ), ImVec2( frame.cols, frame.rows ) );
-        ImGui::End();
-        glBindTexture( GL_TEXTURE_2D, 0 );
+        ImGui::Text( "Hello, world!" );
 
+        ImGui::End();
 
         useImageShader( imageShader, frame);
         
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
         glfwSwapBuffers( window );
+
+        firstIteration = false;
+        // Check if q was pressed
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            is_show = false;
+        }
     }
 
     ImGui_ImplGlfw_Shutdown();
