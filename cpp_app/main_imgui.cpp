@@ -87,8 +87,8 @@ ImageShader compileImageShader( const char* vertexShaderSource, const char* frag
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.cols, image.rows, 0, GL_RGB, GL_UNSIGNED_BYTE, image.data);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     return { shaderProgram, VAO, texture };
 }
@@ -141,26 +141,26 @@ int main( int argc, char* argv[] )
         glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
         glClear( GL_COLOR_BUFFER_BIT );
 
-        // ImGui_ImplOpenGL3_NewFrame();
-        // ImGui_ImplGlfw_NewFrame();
-        // ImGui::NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
-        // ImGui::Begin( "imgui image", &is_show );
-        // GLuint texture;
-        // glGenTextures( 1, &texture );
-        // glBindTexture( GL_TEXTURE_2D, texture );
-        // glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-        // glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        ImGui::Begin( "imgui image", &is_show );
+        GLuint texture;
+        glGenTextures( 1, &texture );
+        glBindTexture( GL_TEXTURE_2D, texture );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
+        ImGui::Image( reinterpret_cast<void*>( static_cast<intptr_t>( texture ) ), ImVec2( image.cols, image.rows ) );
+        ImGui::End();
+        glBindTexture( GL_TEXTURE_2D, 0 );
+
 
         useImageShader( imageShader );
         
-        // glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
-        // ImGui::Image( reinterpret_cast<void*>( static_cast<intptr_t>( texture ) ), ImVec2( image.cols, image.rows ) );
-        // ImGui::End();
-
-        // ImGui::Render();
-        // ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
-
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
         glfwSwapBuffers( window );
     }
 
