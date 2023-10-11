@@ -110,13 +110,6 @@ int main( int argc, char* argv[] )
         return -1;
     }
 
-    cv::Mat image = cv::imread("/home/xallt/Pictures/frog_mesh_neus3.png", cv::IMREAD_COLOR );
-    if( image.empty() ){
-        std::cout << "Could not open or find the image" << std::endl;
-        return -1;
-    }
-    cv::cvtColor( image, image, cv::COLOR_BGR2RGBA );
-
     cv::VideoCapture cap(0);
 
     if (!cap.isOpened()) {
