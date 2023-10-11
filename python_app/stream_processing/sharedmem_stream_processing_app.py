@@ -91,7 +91,6 @@ class SharedmemStreamProcessingApp(WebcamApp):
         cv2.destroyAllWindows()
         frame_shm.close()
 
-
     def image_process_loop(self):
         self.start_time = time.time() * 1000
 
@@ -104,6 +103,7 @@ class SharedmemStreamProcessingApp(WebcamApp):
         processed_frame_shm = SharedMemory(name='cur_processed_frame')
         processed_frame = np.ndarray((*frame_shape, 3), buffer=processed_frame_shm.buf, dtype='u1')
         def register_transformed_image(image: np.ndarray):
+            self.logger.debug(f"Received transformed frame {self.frame_counter.value}")
             processed_frame[:] = image
             self.frame_counter.value += 1
 
@@ -114,6 +114,7 @@ class SharedmemStreamProcessingApp(WebcamApp):
                 break
             frame_res = cv2.flip(frame, 1)
             frame_res = cv2.cvtColor(frame_res, cv2.COLOR_BGR2RGB)
+            self.logger.debug(f"Sending frame {self.frame_counter.value} for processing")
             if not self.async_transform:
                 register_transformed_image(self.transform.transform(frame_res))
             else:
