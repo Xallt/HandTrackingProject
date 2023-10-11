@@ -117,7 +117,11 @@ int main( int argc, char* argv[] )
         return -1;
     }
     cv::Mat frame;
-    cap >> frame;
+    if (!cap.read(frame)) {
+        std::cout << "Error: Could not read frame from webcam" << std::endl;
+        return -1;
+    }
+    cv::cvtColor( frame, frame, cv::COLOR_BGR2RGBA );
 
     GLFWwindow* window = glfwCreateWindow( frame.cols, frame.rows, "glfw window", nullptr, nullptr );
     glfwSetWindowCloseCallback( window, []( GLFWwindow* window ){ glfwSetWindowShouldClose( window, GL_FALSE ); } );
@@ -147,7 +151,7 @@ int main( int argc, char* argv[] )
     uint32_t width, height;
     while (is_show) {
         glfwPollEvents();
-        cap >> frame;
+        cap.read(frame);
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
         // Flip vertically and horizontally
         cv::flip(frame, frame, 0);
