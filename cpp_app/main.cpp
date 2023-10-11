@@ -145,7 +145,6 @@ int main( int argc, char* argv[] )
     ImGui_ImplOpenGL3_Init( "#version 330" );
 
 
-
     bool is_show = true;
     bool flagFlipHorizontally = true;
     uint32_t width, height;
@@ -153,6 +152,7 @@ int main( int argc, char* argv[] )
         glfwPollEvents();
         cap.read(frame);
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
+
         // Flip vertically and horizontally
         cv::flip(frame, frame, 0);
         if (flagFlipHorizontally)
@@ -165,10 +165,16 @@ int main( int argc, char* argv[] )
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (firstIteration)
-            ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+        if (firstIteration) {
+            // Align to upper right corner
+            ImGui::SetNextWindowPos( ImVec2( frame.cols, 0 ), 0, ImVec2(1,0) );
+            // Set transparent background
+            ImGui::SetNextWindowBgAlpha(0.5f);
+        }
+
         ImGui::Begin( "ImGUI controls", &is_show );
         ImGui::Checkbox( "Flip horizontally", &flagFlipHorizontally );
+        
 
         ImGui::End();
 
