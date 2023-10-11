@@ -56,7 +56,6 @@ class SharedmemStreamProcessingApp(WebcamApp):
                 break
 
             ret, _ = cap.read(frame)
-            frame[:] = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         cap.release()
         frame_shape_shm.close()
         frame_shm.close()
@@ -114,6 +113,7 @@ class SharedmemStreamProcessingApp(WebcamApp):
             if self.exit_flag.value:
                 break
             frame_res = cv2.flip(frame, 1)
+            frame_res = cv2.cvtColor(frame_res, cv2.COLOR_BGR2RGB)
             if not self.async_transform:
                 register_transformed_image(self.transform.transform(frame_res))
             else:
