@@ -80,7 +80,9 @@ class SharedmemStreamProcessingApp(WebcamApp):
                 frame_res,
                 {'FPS': fps},
                 color=(0, 255, 0),
-                scale=0.8
+                scale=0.8,
+                precision=2,
+                alpha=0.1
             )
             cv2.imshow('frame', frame_res)
             prev_time = cur_time
