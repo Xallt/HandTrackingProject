@@ -1,8 +1,5 @@
 import mediapipe as mp
-from mediapipe import solutions
-from mediapipe.framework.formats import landmark_pb2
 from transformations.image_transform import ImageTransform
-import pyautogui
 import numpy as np
 import cv2
 from PIL import Image
