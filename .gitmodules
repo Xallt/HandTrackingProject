@@ -1,3 +1,6 @@
 [submodule "cpp_app/dependencies/imgui"]
 	path = cpp_app/dependencies/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "cpp_app/dependencies/mediapipe"]
+	path = cpp_app/dependencies/mediapipe
+	url = git@github.com:Xallt/mediapipe.git
