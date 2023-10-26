@@ -4,3 +4,6 @@
 [submodule "cpp_app/dependencies/mediapipe"]
 	path = cpp_app/dependencies/mediapipe
 	url = git@github.com:Xallt/mediapipe.git
+[submodule "cpp_app/dependencies/abseil-cpp"]
+	path = cpp_app/dependencies/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git
