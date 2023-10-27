@@ -8,6 +8,9 @@
 #include "imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
 
+#include "run_graph_gpu.h"
+
+
 const char* vertexShaderSource = R"(
 #version 330 core
 layout(location = 0) in vec3 aPos;
@@ -105,7 +108,10 @@ void useImageShader( ImageShader imageShader, cv::Mat image) {
 
 int main( int argc, char* argv[] )
 {
-    if(!glfwInit()){
+    RunMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt", "", "");
+    exit(0);
+
+    if (!glfwInit()) {
         std::cout << "Could not initialize GLFW" << std::endl;
         return -1;
     }

@@ -32,19 +32,13 @@ set(IMGUI_INCLUDE_DIRS
 set(MEDIAPIPE_DIR ${CMAKE_SOURCE_DIR}/dependencies/mediapipe)
 set(MEDIAPIPE_DESKTOP_DIR ${MEDIAPIPE_DIR}/mediapipe/examples/desktop)
 
-set(MEDIAPIPE_DESKTOP_LIBRARY_DIR
-    ${MEDIAPIPE_DIR}/bazel-bin/mediapipe/examples/desktop
+set(MEDIAPIPE_DESKTOP_LIBRARIES 
+    ${MEDIAPIPE_DIR}/bazel-bin/mediapipe/examples/desktop/librun_graph_main_gpu.so
 )
-# set(MEDIAPIPE_DESKTOP_LIBRARIES 
-#     ${MEDIAPIPE_DIR}/bazel-bin/mediapipe/examples/desktop/librun_graph_main_gpu.so
-# )
+
 set(MEDIAPIPE_DESKTOP_INCLUDE_DIRS
     ${MEDIAPIPE_DESKTOP_DIR}
 )
-
-# Add Mediapipe Desktop library target
-# add_library(mediapipe_desktop SHARED IMPORTED)
-# set_target_properties(mediapipe_desktop PROPERTIES IMPORTED_LOCATION ${MEDIAPIPE_DESKTOP_LIBRARIES})
 
 # Include packages
 include_directories(
@@ -53,6 +47,7 @@ include_directories(
     ${GLEW_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIRS}
     ${IMGUI_INCLUDE_DIRS}
+    ${MEDIAPIPE_DIR}
     ${MEDIAPIPE_DESKTOP_INCLUDE_DIRS}
 )  
 
@@ -60,7 +55,6 @@ add_subdirectory(dependencies/abseil-cpp)
 
 add_executable(main main.cpp ${IMGUI_SOURCES})  # Define executable target
 target_link_libraries(main absl::flags absl::log absl::status)
-target_link_directories(main PUBLIC ${MEDIAPIPE_DESKTOP_LIBRARY_DIR})
 
 # Link libraries
 target_link_libraries(main
@@ -69,6 +63,7 @@ target_link_libraries(main
     ${GLEW_LIBRARIES}
     ${GLUT_LIBRARIES}
     dl
-    run_graph_main_gpu
     ${OpenCV_LIBS}
+    ${LIBMP_LIBRARIES}
+    ${MEDIAPIPE_DESKTOP_LIBRARIES}
 )
