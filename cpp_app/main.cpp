@@ -108,7 +108,8 @@ void useImageShader( ImageShader imageShader, cv::Mat image) {
 
 int main( int argc, char* argv[] )
 {
-    RunMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt", "", "");
+    SimpleMPPGraphRunner runner;
+    runner.RunMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt", "", "");
     exit(0);
 
     if (!glfwInit()) {
