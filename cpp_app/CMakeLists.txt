@@ -51,10 +51,8 @@ include_directories(
     ${MEDIAPIPE_DESKTOP_INCLUDE_DIRS}
 )  
 
-add_subdirectory(dependencies/abseil-cpp)
 
 add_executable(main main.cpp ${IMGUI_SOURCES})  # Define executable target
-target_link_libraries(main absl::flags absl::log absl::status)
 
 # Link libraries
 target_link_libraries(main
