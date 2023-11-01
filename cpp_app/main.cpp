@@ -150,9 +150,12 @@ int main( int argc, char* argv[] )
     ImGui_ImplGlfw_InitForOpenGL( window, true );
     ImGui_ImplOpenGL3_Init( "#version 330" );
 
+    // ImGUI variables
+    bool flagFlipHorizontally = true; // Mirror the image horizontally
+    ImVec4 color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Color of the landmarks
+
 
     bool is_show = true;
-    bool flagFlipHorizontally = true;
     uint32_t width, height;
     std::vector<LandmarkList> landmarks;
     bool landmark_presence;
@@ -170,12 +173,12 @@ int main( int argc, char* argv[] )
         cv::Mat frame_copy;
         size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
         runner.ProcessFrame(frame, frame_timestamp_us, frame_copy, landmarks, landmark_presence);
-        // cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
 
         if (landmark_presence) {
+            cv::Scalar color_cv = cv::Scalar(color.x * 255, color.y * 255, color.z * 255);
             for (int hand_num = 0; hand_num < landmarks.size(); hand_num++) {
                 for (int i = 0; i < landmarks[hand_num].landmarks.size(); i++) {
-                    cv::circle(frame, cv::Point(landmarks[hand_num].landmarks[i].x * frame.cols, landmarks[hand_num].landmarks[i].y * frame.rows), 5, cv::Scalar(0, 0, 255), -1);
+                    cv::circle(frame, cv::Point(landmarks[hand_num].landmarks[i].x * frame.cols, landmarks[hand_num].landmarks[i].y * frame.rows), 5, color_cv, -1);
                 }
             }
         }
@@ -196,6 +199,7 @@ int main( int argc, char* argv[] )
 
         ImGui::Begin( "ImGUI controls", &is_show );
         ImGui::Checkbox( "Flip horizontally", &flagFlipHorizontally );
+        ImGui::ColorEdit3( "Color", (float*)&color );
         
 
         ImGui::End();
