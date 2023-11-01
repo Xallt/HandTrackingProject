@@ -1,15 +1,14 @@
+#include <GL/glew.h>
+#include <GL/glut.h>
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-#include <GL/glew.h>
-#include <GL/glut.h>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <GLFW/glfw3.h>
-
 #include "run_graph_gpu.h"
-
 
 const char* vertexShaderSource = R"(
 #version 330 core
@@ -45,7 +44,7 @@ struct ImageShader {
     GLuint texture;
 };
 
-ImageShader compileImageShader( const char* vertexShaderSource, const char* fragmentShaderSource, cv::Mat image) {
+ImageShader compileImageShader(const char* vertexShaderSource, const char* fragmentShaderSource, cv::Mat image) {
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(vertexShader);
@@ -61,15 +60,13 @@ ImageShader compileImageShader( const char* vertexShaderSource, const char* frag
 
     float vertices[] = {
         // positions        // texture coords
-        1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
-        1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f
-    };
+        1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f};
     unsigned int indices[] = {
         0, 1, 3,
-        1, 2, 3
-    };
+        1, 2, 3};
 
     GLuint VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -90,24 +87,23 @@ ImageShader compileImageShader( const char* vertexShaderSource, const char* frag
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.cols, image.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    return { shaderProgram, VAO, texture };
+    return {shaderProgram, VAO, texture};
 }
 
-void useImageShader( ImageShader imageShader, cv::Mat image) {
+void useImageShader(ImageShader imageShader, cv::Mat image) {
     glUseProgram(imageShader.shaderProgram);
     glBindVertexArray(imageShader.VAO);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, imageShader.texture);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image.cols, image.rows, GL_RGBA, GL_UNSIGNED_BYTE, image.data );
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image.cols, image.rows, GL_RGBA, GL_UNSIGNED_BYTE, image.data);
     glUniform1i(glGetUniformLocation(imageShader.shaderProgram, "texture1"), 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
-int main( int argc, char* argv[] )
-{
+int main(int argc, char* argv[]) {
     SimpleMPPGraphRunner runner;
     runner.InitMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt");
 
@@ -127,15 +123,15 @@ int main( int argc, char* argv[] )
         std::cout << "Error: Could not read frame from webcam" << std::endl;
         return -1;
     }
-    cv::cvtColor( frame, frame, cv::COLOR_BGR2RGBA );
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
 
-    GLFWwindow* window = glfwCreateWindow( frame.cols, frame.rows, "glfw window", nullptr, nullptr );
-    glfwSetWindowCloseCallback( window, []( GLFWwindow* window ){ glfwSetWindowShouldClose( window, GL_FALSE ); } );
-    glfwMakeContextCurrent( window );
-    glfwSetWindowSizeLimits( window, frame.cols, frame.rows, frame.cols, frame.rows);
-    glfwSwapInterval( 1 );
+    GLFWwindow* window = glfwCreateWindow(frame.cols, frame.rows, "glfw window", nullptr, nullptr);
+    glfwSetWindowCloseCallback(window, [](GLFWwindow* window) { glfwSetWindowShouldClose(window, GL_FALSE); });
+    glfwMakeContextCurrent(window);
+    glfwSetWindowSizeLimits(window, frame.cols, frame.rows, frame.cols, frame.rows);
+    glfwSwapInterval(1);
 
-	glewExperimental = GL_TRUE; // stops glew crashing on OSX :-/
+    glewExperimental = GL_TRUE;  // stops glew crashing on OSX :-/
     if (glewInit() != GLEW_OK) {
         std::cout << "Could not initialize GLEW" << std::endl;
         return -1;
@@ -147,13 +143,13 @@ int main( int argc, char* argv[] )
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    ImGui_ImplGlfw_InitForOpenGL( window, true );
-    ImGui_ImplOpenGL3_Init( "#version 330" );
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 
     // ImGUI variables
-    bool flagFlipHorizontally = true; // Mirror the image horizontally
-    ImVec4 color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Color of the landmarks
-
+    bool flagFlipHorizontally = true;               // Mirror the image horizontally
+    ImVec4 color = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);  // Color of the landmarks
+    bool drawConnections = true;                    // Draw lines between landmarks
 
     bool is_show = true;
     uint32_t width, height;
@@ -162,7 +158,6 @@ int main( int argc, char* argv[] )
     float fps = 0.0f;
     float last_time = glfwGetTime();
     while (is_show) {
-
         glfwPollEvents();
         cap.read(frame);
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
@@ -171,7 +166,6 @@ int main( int argc, char* argv[] )
         cv::flip(frame, frame, 0);
         if (flagFlipHorizontally)
             cv::flip(frame, frame, 1);
-
 
         cv::Mat frame_copy;
         size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
@@ -183,11 +177,21 @@ int main( int argc, char* argv[] )
                 for (int i = 0; i < landmarks[hand_num].landmarks.size(); i++) {
                     cv::circle(frame, cv::Point(landmarks[hand_num].landmarks[i].x * frame.cols, landmarks[hand_num].landmarks[i].y * frame.rows), 5, color_cv, -1);
                 }
+                if (drawConnections) {
+                    for (int edge_num = 0; edge_num < landmarkConnections.size(); edge_num++) {
+                        cv::line(
+                            frame,
+                            cv::Point(landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].x * frame.cols, landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].y * frame.rows),
+                            cv::Point(landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].x * frame.cols, landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].y * frame.rows),
+                            color_cv,
+                            2);
+                    }
+                }
             }
         }
 
-        glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
-        glClear( GL_COLOR_BUFFER_BIT );
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -195,7 +199,7 @@ int main( int argc, char* argv[] )
 
         if (firstIteration) {
             // Align to upper right corner
-            ImGui::SetNextWindowPos( ImVec2( frame.cols, 0 ), 0, ImVec2(1,0) );
+            ImGui::SetNextWindowPos(ImVec2(frame.cols, 0), 0, ImVec2(1, 0));
             // Set transparent background
             ImGui::SetNextWindowBgAlpha(0.5f);
         }
@@ -205,19 +209,19 @@ int main( int argc, char* argv[] )
         fps = 1.0f / (current_time - last_time);
         last_time = current_time;
 
-        ImGui::Begin( "ImGUI controls", &is_show );
-        ImGui::Text( "FPS: %.1f", fps );
-        ImGui::Checkbox( "Flip horizontally", &flagFlipHorizontally );
-        ImGui::ColorEdit3( "Color", (float*)&color );
-        
+        ImGui::Begin("ImGUI controls", &is_show);
+        ImGui::Text("FPS: %.1f", fps);
+        ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
+        ImGui::ColorEdit3("Color", (float*)&color);
+        ImGui::Checkbox("Draw connections", &drawConnections);
 
         ImGui::End();
 
-        useImageShader( imageShader, frame);
-        
+        useImageShader(imageShader, frame);
+
         ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
-        glfwSwapBuffers( window );
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window);
 
         firstIteration = false;
         // Check if q was pressed
