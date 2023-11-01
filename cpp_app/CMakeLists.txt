@@ -3,6 +3,9 @@ project(ReadImageProject)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE Debug) # Debug by default
 
+# Add flags for gprof
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+
 # Find packages
 find_package(glfw3 3.3 REQUIRED)  # Find glfw3 package
 find_package(OpenGL REQUIRED)  # Find OpenGL package
