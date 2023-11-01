@@ -159,7 +159,10 @@ int main( int argc, char* argv[] )
     uint32_t width, height;
     std::vector<LandmarkList> landmarks;
     bool landmark_presence;
+    float fps = 0.0f;
+    float last_time = glfwGetTime();
     while (is_show) {
+
         glfwPollEvents();
         cap.read(frame);
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
@@ -197,7 +200,13 @@ int main( int argc, char* argv[] )
             ImGui::SetNextWindowBgAlpha(0.5f);
         }
 
+        // Calculate FPS
+        float current_time = glfwGetTime();
+        fps = 1.0f / (current_time - last_time);
+        last_time = current_time;
+
         ImGui::Begin( "ImGUI controls", &is_show );
+        ImGui::Text( "FPS: %.1f", fps );
         ImGui::Checkbox( "Flip horizontally", &flagFlipHorizontally );
         ImGui::ColorEdit3( "Color", (float*)&color );
         
