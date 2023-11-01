@@ -110,8 +110,6 @@ int main( int argc, char* argv[] )
 {
     SimpleMPPGraphRunner runner;
     runner.InitMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt");
-    // runner.RunMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt", "", "");
-    // exit(0);
 
     if (!glfwInit()) {
         std::cout << "Could not initialize GLFW" << std::endl;
@@ -156,6 +154,8 @@ int main( int argc, char* argv[] )
     bool is_show = true;
     bool flagFlipHorizontally = true;
     uint32_t width, height;
+    std::vector<LandmarkList> landmarks;
+    bool landmark_presence;
     while (is_show) {
         glfwPollEvents();
         cap.read(frame);
@@ -167,12 +167,18 @@ int main( int argc, char* argv[] )
             cv::flip(frame, frame, 1);
 
 
-        cv::Mat frame_copy = frame.clone();
-        std::vector<LandmarkList> landmarks;
-        bool landmark_presence;
+        cv::Mat frame_copy;
         size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
-        runner.ProcessFrame(frame_copy, frame_timestamp_us, frame, landmarks, landmark_presence);
-        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
+        runner.ProcessFrame(frame, frame_timestamp_us, frame_copy, landmarks, landmark_presence);
+        // cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
+
+        if (landmark_presence) {
+            for (int hand_num = 0; hand_num < landmarks.size(); hand_num++) {
+                for (int i = 0; i < landmarks[hand_num].landmarks.size(); i++) {
+                    cv::circle(frame, cv::Point(landmarks[hand_num].landmarks[i].x * frame.cols, landmarks[hand_num].landmarks[i].y * frame.rows), 5, cv::Scalar(0, 0, 255), -1);
+                }
+            }
+        }
 
         glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
         glClear( GL_COLOR_BUFFER_BIT );
