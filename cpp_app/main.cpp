@@ -109,8 +109,9 @@ void useImageShader( ImageShader imageShader, cv::Mat image) {
 int main( int argc, char* argv[] )
 {
     SimpleMPPGraphRunner runner;
-    runner.RunMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt", "", "");
-    exit(0);
+    runner.InitMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt");
+    // runner.RunMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt", "", "");
+    // exit(0);
 
     if (!glfwInit()) {
         std::cout << "Could not initialize GLFW" << std::endl;
@@ -164,6 +165,14 @@ int main( int argc, char* argv[] )
         cv::flip(frame, frame, 0);
         if (flagFlipHorizontally)
             cv::flip(frame, frame, 1);
+
+
+        cv::Mat frame_copy = frame.clone();
+        std::vector<LandmarkList> landmarks;
+        bool landmark_presence;
+        size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
+        runner.ProcessFrame(frame_copy, frame_timestamp_us, frame, landmarks, landmark_presence);
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
 
         glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
         glClear( GL_COLOR_BUFFER_BIT );
