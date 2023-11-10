@@ -148,9 +148,10 @@ int main(int argc, char* argv[]) {
 
     // ImGUI variables
     bool flagFlipHorizontally = true;               // Mirror the image horizontally
+    bool drawConnections = true;                    // Draw lines between landmarks
+    bool drawLandmarkNumbers = false;               // Draw landmark numbers
     ImVec4 landmarkColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);  // Color of the landmarks
     ImVec4 landmarkConnectionColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Color of the landmarks
-    bool drawConnections = true;                    // Draw lines between landmarks
 
     bool is_show = true;
     uint32_t width, height;
@@ -164,30 +165,63 @@ int main(int argc, char* argv[]) {
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
 
         // Flip vertically and horizontally
-        cv::flip(frame, frame, 0);
         if (flagFlipHorizontally)
             cv::flip(frame, frame, 1);
-
+            
+        // Get landmarks from Mediapipe Graph
         cv::Mat frame_copy;
         size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
         runner.ProcessFrame(frame, frame_timestamp_us, frame_copy, landmarks, landmark_presence);
 
+        // If landmarks are present, draw them
         if (landmark_presence) {
-            cv::Scalar landmarkColorCV = cv::Scalar(landmarkColor.x * 255, landmarkColor.y * 255, landmarkColor.z * 255);
-            cv::Scalar landmarkConnectionColorCV = cv::Scalar(landmarkConnectionColor.x * 255, landmarkConnectionColor.y * 255, landmarkConnectionColor.z * 255);
+            cv::Scalar landmarkColorCV = cv::Scalar(
+                landmarkColor.x * 255, 
+                landmarkColor.y * 255, 
+                landmarkColor.z * 255
+            );
+            cv::Scalar landmarkConnectionColorCV = cv::Scalar(
+                landmarkConnectionColor.x * 255, 
+                landmarkConnectionColor.y * 255, 
+                landmarkConnectionColor.z * 255
+            );
             for (int hand_num = 0; hand_num < landmarks.size(); hand_num++) {
                 if (drawConnections) {
                     for (int edge_num = 0; edge_num < landmarkConnections.size(); edge_num++) {
                         cv::line(
                             frame,
-                            cv::Point(landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].x * frame.cols, landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].y * frame.rows),
-                            cv::Point(landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].x * frame.cols, landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].y * frame.rows),
+                            cv::Point(
+                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].x * frame.cols, 
+                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].y * frame.rows
+                            ),
+                            cv::Point(
+                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].x * frame.cols,
+                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].y * frame.rows
+                            ),
                             landmarkConnectionColorCV,
-                            2);
+                            2
+                        );
                     }
                 }
                 for (int i = 0; i < landmarks[hand_num].landmarks.size(); i++) {
-                    cv::circle(frame, cv::Point(landmarks[hand_num].landmarks[i].x * frame.cols, landmarks[hand_num].landmarks[i].y * frame.rows), 5, landmarkColorCV, -1);
+                    cv::circle(
+                        frame, 
+                        cv::Point(
+                            landmarks[hand_num].landmarks[i].x * frame.cols,
+                            landmarks[hand_num].landmarks[i].y * frame.rows),
+                            5, cv::Scalar(255, 255, 255), -1
+                        );
+                    if (drawLandmarkNumbers) {
+                        cv::putText(
+                            frame,
+                            std::to_string(i),
+                            cv::Point(
+                                landmarks[hand_num].landmarks[i].x * frame.cols + 5,
+                                landmarks[hand_num].landmarks[i].y * frame.rows - 5
+                            ),
+                            cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1
+                        );
+                    }
                 }
             }
         }
@@ -214,11 +248,12 @@ int main(int argc, char* argv[]) {
         ImGui::Begin("ImGUI controls", &is_show);
         ImGui::Text("FPS: %.1f", fps);
         ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
-        // ImGui::ColorEdit3("Color", (float*)&landmarkColor);
         ImGui::Checkbox("Draw connections", &drawConnections);
+        ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
 
         ImGui::End();
 
+        cv::flip(frame, frame, 0);
         useImageShader(imageShader, frame);
 
         ImGui::Render();
