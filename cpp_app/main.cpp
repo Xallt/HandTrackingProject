@@ -103,174 +103,228 @@ void useImageShader(ImageShader imageShader, cv::Mat image) {
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
-int main(int argc, char* argv[]) {
-    SimpleMPPGraphRunner runner;
-    runner.InitMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt");
-
-    if (!glfwInit()) {
-        std::cout << "Could not initialize GLFW" << std::endl;
-        return -1;
-    }
-
-    cv::VideoCapture cap(0);
-
-    if (!cap.isOpened()) {
-        std::cout << "Error: Could not access webcam" << std::endl;
-        return -1;
-    }
-    cv::Mat frame;
-    if (!cap.read(frame)) {
-        std::cout << "Error: Could not read frame from webcam" << std::endl;
-        return -1;
-    }
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
-
-    GLFWwindow* window = glfwCreateWindow(frame.cols, frame.rows, "glfw window", nullptr, nullptr);
-    glfwSetWindowCloseCallback(window, [](GLFWwindow* window) { glfwSetWindowShouldClose(window, GL_FALSE); });
-    glfwMakeContextCurrent(window);
-    glfwSetWindowSizeLimits(window, frame.cols, frame.rows, frame.cols, frame.rows);
-    glfwSwapInterval(1);
-
-    glewExperimental = GL_TRUE;  // stops glew crashing on OSX :-/
-    if (glewInit() != GLEW_OK) {
-        std::cout << "Could not initialize GLEW" << std::endl;
-        return -1;
-    }
-
-    bool firstIteration = true;
-    ImageShader imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
-
+class HandTrackingApp {
+   private:
     // ImGUI variables
-    bool flagFlipHorizontally = true;               // Mirror the image horizontally
-    bool drawConnections = true;                    // Draw lines between landmarks
-    bool drawLandmarkNumbers = false;               // Draw landmark numbers
-    ImVec4 landmarkColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);  // Color of the landmarks
+    bool flagFlipHorizontally = true;                                 // Mirror the image horizontally
+    bool drawConnections = true;                                      // Draw lines between landmarks
+    bool drawLandmarkNumbers = false;                                 // Draw landmark numbers
+    ImVec4 landmarkColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);            // Color of the landmarks
+    ImVec4 landmarkTouchingColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);    // Color of the landmarks
     ImVec4 landmarkConnectionColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Color of the landmarks
+    float touchDistance = 0.1;                                        // Distance between landmarks to draw a connection
 
-    bool is_show = true;
-    uint32_t width, height;
-    std::vector<LandmarkList> landmarks;
-    bool landmark_presence;
-    float fps = 0.0f;
-    float last_time = glfwGetTime();
-    while (is_show) {
-        glfwPollEvents();
-        cap.read(frame);
-        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
-
-        // Flip vertically and horizontally
-        if (flagFlipHorizontally)
-            cv::flip(frame, frame, 1);
-            
-        // Get landmarks from Mediapipe Graph
-        cv::Mat frame_copy;
-        size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
-        runner.ProcessFrame(frame, frame_timestamp_us, frame_copy, landmarks, landmark_presence);
-
-        // If landmarks are present, draw them
-        if (landmark_presence) {
-            cv::Scalar landmarkColorCV = cv::Scalar(
-                landmarkColor.x * 255, 
-                landmarkColor.y * 255, 
-                landmarkColor.z * 255
-            );
-            cv::Scalar landmarkConnectionColorCV = cv::Scalar(
-                landmarkConnectionColor.x * 255, 
-                landmarkConnectionColor.y * 255, 
-                landmarkConnectionColor.z * 255
-            );
-            for (int hand_num = 0; hand_num < landmarks.size(); hand_num++) {
-                if (drawConnections) {
-                    for (int edge_num = 0; edge_num < landmarkConnections.size(); edge_num++) {
-                        cv::line(
-                            frame,
-                            cv::Point(
-                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].x * frame.cols, 
-                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].y * frame.rows
-                            ),
-                            cv::Point(
-                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].x * frame.cols,
-                                landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].y * frame.rows
-                            ),
-                            landmarkConnectionColorCV,
-                            2
-                        );
-                    }
-                }
-                for (int i = 0; i < landmarks[hand_num].landmarks.size(); i++) {
-                    cv::circle(
-                        frame, 
+   public:
+    HandTrackingApp() {}
+    void drawLandmarks(cv::Mat& frame, const std::vector<LandmarkList>& landmarks) {
+        cv::Scalar landmarkColorCV = cv::Scalar(
+            landmarkColor.x * 255,
+            landmarkColor.y * 255,
+            landmarkColor.z * 255);
+        cv::Scalar landmarkConnectionColorCV = cv::Scalar(
+            landmarkConnectionColor.x * 255,
+            landmarkConnectionColor.y * 255,
+            landmarkConnectionColor.z * 255);
+        for (int hand_num = 0; hand_num < landmarks.size(); hand_num++) {
+            if (drawConnections) {
+                for (int edge_num = 0; edge_num < landmarkConnections.size(); edge_num++) {
+                    cv::line(
+                        frame,
                         cv::Point(
-                            landmarks[hand_num].landmarks[i].x * frame.cols,
-                            landmarks[hand_num].landmarks[i].y * frame.rows),
-                            5, cv::Scalar(255, 255, 255), -1
-                        );
-                    if (drawLandmarkNumbers) {
-                        cv::putText(
-                            frame,
-                            std::to_string(i),
-                            cv::Point(
-                                landmarks[hand_num].landmarks[i].x * frame.cols + 5,
-                                landmarks[hand_num].landmarks[i].y * frame.rows - 5
-                            ),
-                            cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1
-                        );
-                    }
+                            landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].x * frame.cols,
+                            landmarks[hand_num].landmarks[landmarkConnections[edge_num].first].y * frame.rows),
+                        cv::Point(
+                            landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].x * frame.cols,
+                            landmarks[hand_num].landmarks[landmarkConnections[edge_num].second].y * frame.rows),
+                        landmarkConnectionColorCV,
+                        2);
+                }
+            }
+            for (int i = 0; i < landmarks[hand_num].landmarks.size(); i++) {
+                cv::circle(
+                    frame,
+                    cv::Point(
+                        landmarks[hand_num].landmarks[i].x * frame.cols,
+                        landmarks[hand_num].landmarks[i].y * frame.rows),
+                    5, landmarkColorCV, -1);
+                if (drawLandmarkNumbers) {
+                    cv::putText(
+                        frame,
+                        std::to_string(i),
+                        cv::Point(
+                            landmarks[hand_num].landmarks[i].x * frame.cols + 5,
+                            landmarks[hand_num].landmarks[i].y * frame.rows - 5),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
                 }
             }
         }
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        // Draw connections between very close landmarks
+        int numLandmarksOnHand = landmarks[0].landmarks.size();
+        cv::Scalar landmarkTouchingColorCV = cv::Scalar(
+            landmarkTouchingColor.x * 255,
+            landmarkTouchingColor.y * 255,
+            landmarkTouchingColor.z * 255);
+        for (int lmk_num_g = 0; lmk_num_g < numLandmarksOnHand * landmarks.size(); lmk_num_g++) {
+            int hand_num = lmk_num_g / numLandmarksOnHand;
+            int lmk_num = lmk_num_g % numLandmarksOnHand;
+            for (int lmk_num2_g = lmk_num_g + 1; lmk_num2_g < numLandmarksOnHand * landmarks.size(); lmk_num2_g++) {
+                int hand_num2 = lmk_num2_g / numLandmarksOnHand;
+                int lmk_num2 = lmk_num2_g % numLandmarksOnHand;
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+                // Skip if the landmarks are on the same hand
+                // And already have a connection in landmarkConnections
+                if (hand_num == hand_num2) {
+                    bool skip = false;
+                    for (int edge_num = 0; edge_num < landmarkConnections.size(); edge_num++) {
+                        if (
+                            (landmarkConnections[edge_num].first == lmk_num && landmarkConnections[edge_num].second == lmk_num2) ||
+                            (landmarkConnections[edge_num].first == lmk_num2 && landmarkConnections[edge_num].second == lmk_num)) {
+                            skip = true;
+                            break;
+                        }
+                    }
+                    if (skip) continue;
+                }
 
-        if (firstIteration) {
-            // Align to upper right corner
-            ImGui::SetNextWindowPos(ImVec2(frame.cols, 0), 0, ImVec2(1, 0));
-            // Set transparent background
-            ImGui::SetNextWindowBgAlpha(0.5f);
-        }
-
-        // Calculate FPS
-        float current_time = glfwGetTime();
-        fps = 1.0f / (current_time - last_time);
-        last_time = current_time;
-
-        ImGui::Begin("ImGUI controls", &is_show);
-        ImGui::Text("FPS: %.1f", fps);
-        ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
-        ImGui::Checkbox("Draw connections", &drawConnections);
-        ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
-
-        ImGui::End();
-
-        cv::flip(frame, frame, 0);
-        useImageShader(imageShader, frame);
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        glfwSwapBuffers(window);
-
-        firstIteration = false;
-        // Check if q was pressed
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-            is_show = false;
+                float distance = sqrt(
+                    pow(landmarks[hand_num].landmarks[lmk_num].x - landmarks[hand_num2].landmarks[lmk_num2].x, 2) +
+                    pow(landmarks[hand_num].landmarks[lmk_num].y - landmarks[hand_num2].landmarks[lmk_num2].y, 2));
+                if (distance < touchDistance) {
+                    cv::line(
+                        frame,
+                        cv::Point(
+                            landmarks[hand_num].landmarks[lmk_num].x * frame.cols,
+                            landmarks[hand_num].landmarks[lmk_num].y * frame.rows),
+                        cv::Point(
+                            landmarks[hand_num2].landmarks[lmk_num2].x * frame.cols,
+                            landmarks[hand_num2].landmarks[lmk_num2].y * frame.rows),
+                        landmarkTouchingColorCV,
+                        5);
+                }
+            }
         }
     }
+    int run() {
+        SimpleMPPGraphRunner runner;
+        runner.InitMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt");
 
-    ImGui_ImplGlfw_Shutdown();
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui::DestroyContext();
-    glfwTerminate();
+        if (!glfwInit()) {
+            std::cout << "Could not initialize GLFW" << std::endl;
+            return -1;
+        }
 
-    return 0;
+        cv::VideoCapture cap(0);
+
+        if (!cap.isOpened()) {
+            std::cout << "Error: Could not access webcam" << std::endl;
+            return -1;
+        }
+        cv::Mat frame;
+        if (!cap.read(frame)) {
+            std::cout << "Error: Could not read frame from webcam" << std::endl;
+            return -1;
+        }
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
+
+        GLFWwindow* window = glfwCreateWindow(frame.cols, frame.rows, "glfw window", nullptr, nullptr);
+        glfwSetWindowCloseCallback(window, [](GLFWwindow* window) { glfwSetWindowShouldClose(window, GL_FALSE); });
+        glfwMakeContextCurrent(window);
+        glfwSetWindowSizeLimits(window, frame.cols, frame.rows, frame.cols, frame.rows);
+        glfwSwapInterval(1);
+
+        glewExperimental = GL_TRUE;  // stops glew crashing on OSX :-/
+        if (glewInit() != GLEW_OK) {
+            std::cout << "Could not initialize GLEW" << std::endl;
+            return -1;
+        }
+
+        bool firstIteration = true;
+        ImageShader imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+        ImGui_ImplOpenGL3_Init("#version 330");
+
+        bool is_show = true;
+        uint32_t width, height;
+        std::vector<LandmarkList> landmarks;
+        bool landmark_presence;
+        float fps = 0.03f;
+        float last_time = glfwGetTime();
+        while (is_show) {
+            glfwPollEvents();
+            cap.read(frame);
+            cv::cvtColor(frame, frame, cv::COLOR_BGR2RGBA);
+
+            // Flip vertically and horizontally
+            if (flagFlipHorizontally)
+                cv::flip(frame, frame, 1);
+
+            // Get landmarks from Mediapipe Graph
+            cv::Mat frame_copy;
+            size_t frame_timestamp_us = (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
+            runner.ProcessFrame(frame, frame_timestamp_us, frame_copy, landmarks, landmark_presence);
+
+            // If landmarks are present, draw them
+            if (landmark_presence) {
+                drawLandmarks(frame, landmarks);
+            }
+
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            if (firstIteration) {
+                // Align to upper right corner
+                ImGui::SetNextWindowPos(ImVec2(frame.cols, 0), 0, ImVec2(1, 0));
+                // Set transparent background
+                ImGui::SetNextWindowBgAlpha(0.5f);
+            }
+
+            // Calculate FPS
+            float current_time = glfwGetTime();
+            fps = 1.0f / (current_time - last_time);
+            last_time = current_time;
+
+            ImGui::Begin("ImGUI controls", &is_show);
+            ImGui::Text("FPS: %.1f", fps);
+            ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
+            ImGui::Checkbox("Draw connections", &drawConnections);
+            ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
+            ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
+
+            ImGui::End();
+
+            cv::flip(frame, frame, 0);
+            useImageShader(imageShader, frame);
+
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            glfwSwapBuffers(window);
+
+            firstIteration = false;
+            // Check if q was pressed
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+                is_show = false;
+            }
+        }
+
+        ImGui_ImplGlfw_Shutdown();
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui::DestroyContext();
+        glfwTerminate();
+
+        return 0;
+    }
+};
+
+int main(int argc, char* argv[]) {
+    HandTrackingApp app;
+    return app.run();
 }
