@@ -109,6 +109,7 @@ class HandTrackingApp {
     bool flagFlipHorizontally = true;                                 // Mirror the image horizontally
     bool drawConnections = true;                                      // Draw lines between landmarks
     bool drawLandmarkNumbers = false;                                 // Draw landmark numbers
+    bool drawSameHandTouch = false;                                 // Draw landmark numbers
     ImVec4 landmarkColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);            // Color of the landmarks
     ImVec4 landmarkTouchingColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);    // Color of the landmarks
     ImVec4 landmarkConnectionColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Color of the landmarks
@@ -116,6 +117,14 @@ class HandTrackingApp {
 
    public:
     HandTrackingApp() {}
+    bool isLandmarkFingertip(int landmarkIndex) {
+        int connCounter = 0;
+        for (int pair_num = 0; pair_num < landmarkConnections.size(); pair_num++) {
+            if (landmarkConnections[pair_num].first == landmarkIndex || landmarkConnections[pair_num].second == landmarkIndex)
+                connCounter++;
+        }
+        return connCounter == 1;
+    }
     void drawLandmarks(cv::Mat& frame, const std::vector<LandmarkList>& landmarks) {
         cv::Scalar landmarkColorCV = cv::Scalar(
             landmarkColor.x * 255,
@@ -168,9 +177,12 @@ class HandTrackingApp {
         for (int lmk_num_g = 0; lmk_num_g < numLandmarksOnHand * landmarks.size(); lmk_num_g++) {
             int hand_num = lmk_num_g / numLandmarksOnHand;
             int lmk_num = lmk_num_g % numLandmarksOnHand;
+            if (!isLandmarkFingertip(lmk_num)) continue;
             for (int lmk_num2_g = lmk_num_g + 1; lmk_num2_g < numLandmarksOnHand * landmarks.size(); lmk_num2_g++) {
                 int hand_num2 = lmk_num2_g / numLandmarksOnHand;
                 int lmk_num2 = lmk_num2_g % numLandmarksOnHand;
+                if (!isLandmarkFingertip(lmk_num2)) continue;
+                if (!drawSameHandTouch && hand_num == hand_num2) continue;
 
                 // Skip if the landmarks are on the same hand
                 // And already have a connection in landmarkConnections
@@ -297,6 +309,7 @@ class HandTrackingApp {
             ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
             ImGui::Checkbox("Draw connections", &drawConnections);
             ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
+            ImGui::Checkbox("Draw touching connection within a hand", &drawSameHandTouch);
             ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
 
             ImGui::End();
