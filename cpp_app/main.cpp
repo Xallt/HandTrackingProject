@@ -116,6 +116,8 @@ class HandTrackingApp {
     ImVec4 landmarkConnectionColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Color of the landmarks
     float touchDistance = 0.1;                                        // Distance between landmarks to draw a connection
 
+    float last_time = 0;
+
    public:
     HandTrackingApp() {}
     bool isLandmarkFingertip(int landmarkIndex) {
@@ -218,6 +220,27 @@ class HandTrackingApp {
             }
         }
     }
+    void drawImGui(bool& is_show) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // Calculate FPS
+        float current_time = glfwGetTime();
+        float fps = 1.0f / (current_time - last_time);
+        last_time = current_time;
+
+        ImGui::Begin("ImGUI controls", &is_show);
+        ImGui::Text("FPS: %.1f", fps);
+        ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
+        ImGui::Checkbox("Draw connections", &drawConnections);
+        ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
+        ImGui::Checkbox("Touching withing hand", &drawSameHandTouch);
+        ImGui::Checkbox("Move mouse", &moveMouse);
+        ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
+
+        ImGui::End();
+    }
     int run() {
         SimpleMPPGraphRunner runner;
         runner.InitMPPGraph("/home/xallt/progs/HandTrackingProject/cpp_app/dependencies/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_desktop_live_gpu.pbtxt");
@@ -252,7 +275,6 @@ class HandTrackingApp {
             return -1;
         }
 
-        bool firstIteration = true;
         ImageShader imageShader = compileImageShader(vertexShaderSource, fragmentShaderSource, frame);
 
         IMGUI_CHECKVERSION();
@@ -266,7 +288,7 @@ class HandTrackingApp {
         std::vector<LandmarkList> landmarks;
         bool landmark_presence;
         float fps = 0.03f;
-        float last_time = glfwGetTime();
+        last_time = glfwGetTime();
         while (is_show) {
             glfwPollEvents();
             cap.read(frame);
@@ -289,32 +311,7 @@ class HandTrackingApp {
             glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-
-            if (firstIteration) {
-                // Align to upper right corner
-                ImGui::SetNextWindowPos(ImVec2(frame.cols, 0), 0, ImVec2(1, 0));
-                // Set transparent background
-                ImGui::SetNextWindowBgAlpha(0.5f);
-            }
-
-            // Calculate FPS
-            float current_time = glfwGetTime();
-            fps = 1.0f / (current_time - last_time);
-            last_time = current_time;
-
-            ImGui::Begin("ImGUI controls", &is_show);
-            ImGui::Text("FPS: %.1f", fps);
-            ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
-            ImGui::Checkbox("Draw connections", &drawConnections);
-            ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
-            ImGui::Checkbox("Touching withing hand", &drawSameHandTouch);
-            ImGui::Checkbox("Move mouse", &moveMouse);
-            ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
-
-            ImGui::End();
+            drawImGui(is_show);
 
             if (moveMouse && landmark_presence) {
                 cv::Point3f index_tip = landmarks[0].landmarks[HandLandmark::INDEX_FINGER_TIP];
@@ -328,11 +325,9 @@ class HandTrackingApp {
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
             glfwSwapBuffers(window);
 
-            firstIteration = false;
             // Check if q was pressed
-            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
                 is_show = false;
-            }
         }
 
         ImGui_ImplGlfw_Shutdown();
