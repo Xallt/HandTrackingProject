@@ -109,7 +109,8 @@ class HandTrackingApp {
     bool flagFlipHorizontally = true;                                 // Mirror the image horizontally
     bool drawConnections = true;                                      // Draw lines between landmarks
     bool drawLandmarkNumbers = false;                                 // Draw landmark numbers
-    bool drawSameHandTouch = false;                                 // Draw landmark numbers
+    bool drawSameHandTouch = false;                                   // Draw connections between landmarks on the same hand
+    bool moveMouse = false;                                           // Move mouse to index finger tip
     ImVec4 landmarkColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);            // Color of the landmarks
     ImVec4 landmarkTouchingColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);    // Color of the landmarks
     ImVec4 landmarkConnectionColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Color of the landmarks
@@ -309,10 +310,16 @@ class HandTrackingApp {
             ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
             ImGui::Checkbox("Draw connections", &drawConnections);
             ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
-            ImGui::Checkbox("Draw touching connection within a hand", &drawSameHandTouch);
+            ImGui::Checkbox("Touching withing hand", &drawSameHandTouch);
+            ImGui::Checkbox("Move mouse", &moveMouse);
             ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
 
             ImGui::End();
+
+            if (moveMouse && landmark_presence) {
+                cv::Point3f index_tip = landmarks[0].landmarks[HandLandmark::INDEX_FINGER_TIP];
+                glfwSetCursorPos(window, index_tip.x * frame.cols, index_tip.y * frame.rows);
+            }
 
             cv::flip(frame, frame, 0);
             useImageShader(imageShader, frame);
