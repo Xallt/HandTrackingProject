@@ -111,6 +111,7 @@ class HandTrackingApp {
     bool drawLandmarkNumbers = false;                                 // Draw landmark numbers
     bool drawSameHandTouch = false;                                   // Draw connections between landmarks on the same hand
     bool moveMouse = false;                                           // Move mouse to index finger tip
+    bool drawCenter = false;                                          // Draw center of the hand
     ImVec4 landmarkColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);            // Color of the landmarks
     ImVec4 landmarkTouchingColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);    // Color of the landmarks
     ImVec4 landmarkConnectionColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);  // Color of the landmarks
@@ -168,6 +169,22 @@ class HandTrackingApp {
                             landmarks[hand_num].landmarks[i].y * frame.rows - 5),
                         cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
                 }
+            }
+            if (drawCenter) {
+                cv::Point3f center(0.0, 0.0, 0.0);
+
+                center += landmarks[hand_num].landmarks[HandLandmark::WRIST] / 2;
+                center += landmarks[hand_num].landmarks[HandLandmark::INDEX_FINGER_MCP] / 8;
+                center += landmarks[hand_num].landmarks[HandLandmark::MIDDLE_FINGER_MCP] / 8;
+                center += landmarks[hand_num].landmarks[HandLandmark::RING_FINGER_MCP] / 8;
+                center += landmarks[hand_num].landmarks[HandLandmark::PINKY_MCP] / 8;
+                cv::circle(
+                    frame,
+                    cv::Point(
+                        center.x * frame.cols,
+                        center.y * frame.rows),
+                    3, landmarkColorCV, -1
+                );
             }
         }
 
@@ -237,6 +254,7 @@ class HandTrackingApp {
         ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
         ImGui::Checkbox("Touching within hand", &drawSameHandTouch);
         ImGui::Checkbox("Move mouse", &moveMouse);
+        ImGui::Checkbox("Draw center", &drawCenter);
         ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
 
         ImGui::End();
