@@ -235,7 +235,7 @@ class HandTrackingApp {
         ImGui::Checkbox("Flip horizontally", &flagFlipHorizontally);
         ImGui::Checkbox("Draw connections", &drawConnections);
         ImGui::Checkbox("Draw landmark numbers", &drawLandmarkNumbers);
-        ImGui::Checkbox("Touching withing hand", &drawSameHandTouch);
+        ImGui::Checkbox("Touching within hand", &drawSameHandTouch);
         ImGui::Checkbox("Move mouse", &moveMouse);
         ImGui::SliderFloat("Touch distance", &touchDistance, 0.0f, 0.06f);
 
