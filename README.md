@@ -1,5 +1,7 @@
 # Hand Tracking App with Mediapipe and CMake
 
+![demo fingers](assets/demo_fingers.gif)
+
 ## How to Run the CMake Project
 
 ```bash
